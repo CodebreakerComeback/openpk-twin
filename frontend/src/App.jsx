@@ -254,31 +254,91 @@ setResult({ ...payload, _exportMetadata: { software: 'OpenPK-Twin', software_ver
     }
   }
 
-  const downloadCsv = () => {
-    if (!result) return
-    const profiles = result.representative_profiles_mg_per_L || []
-    const header = ['time_h', 'percentile_05_mg_per_L', 'median_mg_per_L', 'percentile_95_mg_per_L', ...profiles.map((_, index) => `representative_patient_${result.representative_patient_ids?.[index] ?? index + 1}_mg_per_L`)]
-    const rows = result.times_h.map((time, index) => [
-      time,
-      result.percentile_05_mg_per_L[index],
-      result.median_mg_per_L[index],
-      result.percentile_95_mg_per_L[index],
-      ...profiles.map((profile) => profile[index]),
-    ])
-    const csv = [header, ...rows].map((row) => row.map((cell) => {
-      const value = String(cell ?? '')
-      return /[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
-    }).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `openpk-twin-${model}-population-results.csv`
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-  }
+ 
+const downloadCsv = () => {
+  if (!result) return
+
+  const metadata = result._exportMetadata || {}
+  const profiles = result.representative_profiles_mg_per_L || []
+
+  const header = [
+    'time_h',
+    'percentile_05_mg_per_L',
+    'median_mg_per_L',
+    'percentile_95_mg_per_L',
+    ...profiles.map(
+      (_, index) => `representative_patient_${index + 1}_mg_per_L`
+    ),
+  ]
+
+  const dataRows = result.times_h.map((time, index) => [
+    time,
+    result.percentile_05_mg_per_L[index],
+    result.median_mg_per_L[index],
+    result.percentile_95_mg_per_L[index],
+    ...profiles.map((profile) => profile[index]),
+  ])
+
+  // Reproducibility metadata columns.
+  // Repeating metadata on every data row keeps the CSV rectangular
+  // and makes it straightforward to import into Python, R, and Excel.
+  const metadataHeaders = [
+    'metadata_software',
+    'metadata_software_version',
+    'metadata_model_id',
+    'metadata_model_name',
+    'metadata_administration_route',
+    'metadata_simulation_completed_at_utc',
+    'metadata_request_parameters_json',
+    'metadata_model_assumptions_json',
+  ]
+
+  const metadataValues = [
+    metadata.software || 'OpenPK-Twin',
+    metadata.software_version || 'unknown',
+    metadata.model_id || model,
+    metadata.model_name || result.model || '',
+    metadata.route || 'IV bolus',
+    metadata.simulation_completed_at_utc || '',
+    JSON.stringify(metadata.request || {}),
+    JSON.stringify(metadata.assumptions || []),
+  ]
+
+  const metadataRows = [
+    [...header, ...metadataHeaders],
+    ...dataRows.map((row) => [...row, ...metadataValues]),
+  ]
+
+  // Escape CSV values safely
+  const csv = metadataRows
+    .map((row) =>
+      row.map((cell) => {
+        const value = String(cell ?? '')
+        return /[",\r\n]/.test(value)
+          ? `"${value.replaceAll('"', '""')}"`
+          : value
+      }).join(',')
+    )
+    .join('\r\n')
+
+  const blob = new Blob(
+    ['\uFEFF', csv],
+    { type: 'text/csv;charset=utf-8;' }
+  )
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `openpk-twin-${model}-population-results.csv`
+
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+
+  URL.revokeObjectURL(url)
+}
+
 
   const switchModel = (nextModel) => {
     setModel(nextModel)
