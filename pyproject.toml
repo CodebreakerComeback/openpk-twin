@@ -1,0 +1,31 @@
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openpk-twin"
+version = "0.1.0"
+description = "An open-source toolkit for pharmacokinetic modelling and virtual patient simulation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+dependencies = [
+    "numpy>=1.24"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
