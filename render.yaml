@@ -1,0 +1,19 @@
+
+services:
+  - type: web
+    name: openpk-twin-api
+    runtime: python
+    region: singapore
+    plan: free
+
+    buildCommand: pip install ".[api]"
+
+    startCommand: uvicorn openpk_twin.api.main:app --host 0.0.0.0 --port $PORT
+
+    healthCheckPath: /health
+
+    autoDeployTrigger: checksPass
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.8
