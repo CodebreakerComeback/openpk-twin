@@ -243,7 +243,9 @@ function App() {
           : payload.detail || `Request failed with status ${response.status}`
         throw new Error(detail)
       }
-      setResult(payload)
+      
+setResult({ ...payload, _exportMetadata: { software: 'OpenPK-Twin', software_version: '0.1.0', model_id: model, model_name: payload.model, route: 'IV bolus', simulation_completed_at_utc: new Date().toISOString(), request: body, assumptions: payload.assumptions || [] } })
+
       setLastRun(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     } catch (error) {
       setRunError(error.message || 'The simulation could not be completed. Please try again.')
