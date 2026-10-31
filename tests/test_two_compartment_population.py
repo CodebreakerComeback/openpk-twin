@@ -36,15 +36,24 @@ def test_population_output_shapes():
     assert result["percentile_95_mg_per_L"].shape == (25,)
 
 
+
 def test_initial_concentration():
+    """Initial concentration must use each patient's own Vc."""
+
     result = run_population()
 
-    expected = 100.0 / 10.0
+    expected = (
+        100.0 / result["central_volume_L"]
+    )
+
+    observed = result["concentrations_mg_per_L"][:, 0]
 
     np.testing.assert_allclose(
-        result["concentrations_mg_per_L"][:, 0],
+        observed,
         expected,
+        rtol=1e-12,
     )
+
 
 
 def test_zero_variability_matches_deterministic_model():
@@ -138,9 +147,9 @@ def test_parameter_means_are_preserved():
     "changes",
     [
         {"dose_mg": 0},
-        {"central_volume_L": 0},
-        {"peripheral_volume_L": 0},
-        {"clearance_L_per_h": 0},
+        {"typical_central_volume_L": 0},
+        {"typical_peripheral_volume_L": 0},
+        {"typical_clearance_L_per_h": 0},
         {"intercompartmental_clearance_L_per_h": 0},
         {"n_patients": 0},
         {"cv_clearance": -0.1},
