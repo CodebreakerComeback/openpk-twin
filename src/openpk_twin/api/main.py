@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import math
+import os
 
 import numpy as np
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -14,6 +16,13 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+
+from openpk_twin import __version__
+from openpk_twin.simulation import (
+    simulate_virtual_population_iv_bolus,
+    simulate_virtual_population_two_compartment_iv_bolus,
+)
+
 
 from openpk_twin import __version__
 from openpk_twin.simulation import (
@@ -33,6 +42,30 @@ app = FastAPI(
         "patient simulation. Educational and research use only."
     ),
     version=__version__,
+)
+
+
+# ---------------------------------------------------------
+# CORS CONFIGURATION
+# ---------------------------------------------------------
+
+configured_origins = os.getenv(
+    "OPENPK_CORS_ORIGINS",
+    "http://localhost:5173",
+)
+
+allowed_origins = [
+    origin.strip()
+    for origin in configured_origins.split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 
